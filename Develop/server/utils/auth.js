@@ -1,55 +1,39 @@
-const { ApolloServer, AuthenticationError } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 
 // set token secret and expiration date
 const secret = "mysecretsshhhhh";
 const expiration = "2h";
 
-// function for our authenticated routes
-const authMiddleware = (context) => {
-  // allows token to be sent via headers or query parameters
-  let token = context.req.headers.authorization || "";
+module.exports = {
+  // function for our authenticated routes
+  authMiddleware: function ({req}) {
+    // allows token to be sent via  req.query or headers
+    let token = req.query.token || req.headers.authorization || req.body.token;
 
-  if (token.startsWith("Bearer ")) {
-    // Remove "Bearer " from token string
-    token = token.slice(7, token.length);
-  }
+    // ["Bearer", "<tokenvalue>"]
+    if (req.headers.authorization) {
+      token = token.split(" ").pop().trim();
+    }
 
-  if (!token) {
-    throw new AuthenticationError("You must be logged in");
-  }
+    if (!token) {
+      return req;
+    }
 
-  try {
-    const { data } = jwt.verify(token, secret, { maxAge: expiration });
-    context.user = data;
-  } catch (err) {
-    console.log(err);
-    throw new AuthenticationError("Invalid token");
-  }
+    // verify token and get user data out of it
+    try {
+      const { data } = jwt.verify(token, secret, { maxAge: expiration });
+      req.user = data;
+    } catch {
+      console.log("Invalid token");
+      
+    }
 
-  return context;
-};
+    // send to next endpoint
+    return req 
+  },
+  signToken: function ({ username, email, _id }) {
+    const payload = { username, email, _id };
 
-const typeDefs = `
-  type Query {
-    hello: String
-  }
-`;
-
-const resolvers = {
-  Query: {
-    hello: () => "Hello world!",
+    return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
   },
 };
-
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: ({ req }) => {
-    return authMiddleware({ req });
-  },
-});
-
-server.listen().then(({ url }) => {
-  console.log(`🚀  Server ready at ${url}`);
-});
