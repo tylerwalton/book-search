@@ -21,38 +21,33 @@ const SignupForm = () => {
     setUserFormData({ ...userFormData, [name]: value });
   };
 
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
+   const handleFormSubmit = async (event) => {
+     event.preventDefault();
 
-    // check if form has everything (as per react-bootstrap docs)
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
+     // check if form has everything (as per react-bootstrap docs)
+     const form = event.currentTarget;
+     if (form.checkValidity() === false) {
+       event.preventDefault();
+       event.stopPropagation();
+     }
 
-    try {
-      // const response = await createUser(userFormData);
+     try {
+       const { data } = await createUser({
+         variables: { ...userFormData },
+       });
 
-      // if (!response.ok) {
-      //   throw new Error('something went wrong!');
-      // }
+       Auth.login(data.addUser.token);
+     } catch (err) {
+       console.error(err);
+       setShowAlert(true);
+     }
 
-      // const { token, user } = await response.json();
-      // console.log(user);
-      const {data} = await addUser ({variables : {...userFormData}})
-      Auth.login(data.addUser.token);
-    } catch (err) {
-      console.error(err);
-      setShowAlert(true);
-    }
-
-    setUserFormData({
-      username: '',
-      email: '',
-      password: '',
-    });
-  };
+     setUserFormData({
+       username: "",
+       email: "",
+       password: "",
+     });
+   };
 
   return (
     <>
